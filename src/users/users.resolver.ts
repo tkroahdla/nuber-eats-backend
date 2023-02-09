@@ -1,4 +1,5 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { boolean } from 'joi';
 import {
   CreateAccountInput,
   CreateAccountOutput,
@@ -20,6 +21,7 @@ export class UsersResolver {
   async createAccount(
     @Args('input') createAccountInput: CreateAccountInput,
   ): Promise<CreateAccountOutput> {
+    console.log('createAccountInput', createAccountInput);
     try {
       return await this.usersService.createAccount(createAccountInput);
     } catch (error) {
