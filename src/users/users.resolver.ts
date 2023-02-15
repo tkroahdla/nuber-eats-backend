@@ -1,5 +1,4 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { boolean } from 'joi';
 import {
   CreateAccountInput,
   CreateAccountOutput,
@@ -43,4 +42,7 @@ export class UsersResolver {
       };
     }
   }
+
+  @Query((returns) => User)
+  me() {}
 }
