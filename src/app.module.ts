@@ -10,7 +10,8 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import * as Joi from 'joi';
 import { CommonModule } from './common/common.module';
-import { jwtMiddleware } from './jwt/jwt.middleware';
+import { JwtMiddleware } from './jwt/jwt.middleware';
+
 import { JwtModule } from './jwt/jwt.module';
 import { User } from './users/entities/user.entity';
 import { UsersModule } from './users/users.module';
@@ -45,6 +46,7 @@ import { UsersModule } from './users/users.module';
     GraphQLModule.forRoot({
       driver: ApolloDriver,
       autoSchemaFile: true,
+      context: ({ req }) => ({ user: req['user'] }),
     }),
     JwtModule.forRoot({
       privateKey: process.env.PRIVATE_KEY,
@@ -56,12 +58,11 @@ import { UsersModule } from './users/users.module';
   providers: [],
 })
 
-//🚗특정 부분에서만 사용하고 싶을 때
+//🚗특정 부분에서만 사용하고 싶을 때 - class middleware 일 때
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(jwtMiddleware).forRoutes({
-      path: '/graphql',
-      method: RequestMethod.ALL,
-    });
+    consumer
+      .apply(JwtMiddleware)
+      .forRoutes({ path: `/graphql`, method: RequestMethod.POST });
   }
 }
