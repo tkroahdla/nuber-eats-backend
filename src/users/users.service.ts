@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from 'src/jwt/jwt.service';
 import { Repository } from 'typeorm';
 import { CreateAccountInput } from './dtos/create-account.dto';
+import { EditProfileInput } from './dtos/edit-profile';
 import { LoginInput } from './dtos/login.dto';
 import { User } from './entities/user.entity';
 
@@ -70,5 +71,23 @@ export class UsersService {
 
   async findById(id: number): Promise<User> {
     return this.users.findOne({ where: { id } });
+  }
+
+  async editProfile(
+    userId: number,
+    { email, password }: EditProfileInput,
+  ): Promise<User> {
+    const user = await this.users.findOne({ where: { id: userId } });
+    console.log('email123', email, 'password', password);
+    // users.update를 통해서 업데이트하면 BeforeUpdate가 동작하지 않는다.
+    // 왜? ==> update는 entity가 있든 없든 최적의 속도로 업데이트하는 동작,
+    // 때문에 entity가 있는지 없는지 확인하지 않고 그저 DB에 query만 보내는것과 같다.
+    if (email) {
+      user.email = email;
+    }
+    if (password) {
+      user.password = password;
+    }
+    if (password) return this.users.save(user);
   }
 }
