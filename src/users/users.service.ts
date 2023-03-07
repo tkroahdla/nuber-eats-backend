@@ -5,12 +5,16 @@ import { Repository } from 'typeorm';
 import { CreateAccountInput } from './dtos/create-account.dto';
 import { EditProfileInput } from './dtos/edit-profile';
 import { LoginInput } from './dtos/login.dto';
+import { VerifyEmailInput } from './dtos/verify-email.dto';
 import { User } from './entities/user.entity';
+import { Verification } from './entities/verification.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User) private readonly users: Repository<User>,
+    @InjectRepository(Verification)
+    private readonly verification: Repository<Verification>,
     private readonly jwtService: JwtService,
   ) {
     // this.jwtService.hello();
@@ -26,7 +30,16 @@ export class UsersService {
       if (exists) {
         return { ok: false, error: 'There is a user with that email already' };
       }
-      await this.users.save(this.users.create({ email, password, role }));
+
+      const user = await this.users.save(
+        this.users.create({ email, password, role }),
+      );
+
+      await this.verification.save(
+        this.verification.create({
+          user,
+        }),
+      );
       return { ok: true };
     } catch (e) {
       return { ok: false, error: "Could'nt create account" };
@@ -84,10 +97,27 @@ export class UsersService {
     // 때문에 entity가 있는지 없는지 확인하지 않고 그저 DB에 query만 보내는것과 같다.
     if (email) {
       user.email = email;
+      user.verified = false;
+      await this.verification.save(this.verification.create({ user }));
     }
     if (password) {
       user.password = password;
     }
     if (password) return this.users.save(user);
+  }
+
+  async verifyEmail(code: string): Promise<boolean> {
+    const verification = await this.verification.findOne({
+      where: { code },
+      relations: ['user'],
+    });
+
+    if (verification) {
+      verification.user.verified = true;
+      console.log(verification.user);
+      this.users.save(verification.user);
+      return true;
+    }
+    return false;
   }
 }
