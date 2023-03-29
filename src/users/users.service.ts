@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from 'src/jwt/jwt.service';
+
+import { MailService } from 'src/mail/mail.service';
 import { Repository } from 'typeorm';
 import {
   CreateAccountInput,
@@ -9,7 +11,7 @@ import {
 import { EditProfileInput, EditProfileOutput } from './dtos/edit-profile';
 import { LoginInput, LoginOutput } from './dtos/login.dto';
 import { UserProfileOutput } from './dtos/user-proifle.dto';
-import { VerifyEmailInput, VerifyEmailOutput } from './dtos/verify-email.dto';
+import { VerifyEmailOutput } from './dtos/verify-email.dto';
 import { User } from './entities/user.entity';
 import { Verification } from './entities/verification.entity';
 
@@ -20,6 +22,7 @@ export class UsersService {
     @InjectRepository(Verification)
     private readonly verification: Repository<Verification>,
     private readonly jwtService: JwtService,
+    private readonly mailService: MailService,
   ) {
     // this.jwtService.hello();
   }
@@ -39,11 +42,12 @@ export class UsersService {
         this.users.create({ email, password, role }),
       );
 
-      await this.verification.save(
+      const verification = await this.verification.save(
         this.verification.create({
           user,
         }),
       );
+      this.mailService.sendVerificationEmail(user.email, verification.code);
       return { ok: true };
     } catch (e) {
       return { ok: false, error: "Could'nt create account" };
@@ -73,6 +77,7 @@ export class UsersService {
         };
       }
       console.log(user);
+
       const token = this.jwtService.sign(user.id);
 
       return {
